@@ -79,7 +79,9 @@ def show_lists():
     items = [{
         'label': '%s (%s)' % (trakt_list['name'], trakt_list['privacy']),
         'replace_context_menu': True,
-        'context_menu': context_menu(trakt_list['slug']),
+        'context_menu': context_menu(
+            list_slug=trakt_list['slug']
+        ),
         'path': plugin.url_for(
             endpoint='show_list',
             list_slug=trakt_list['slug']
@@ -144,7 +146,7 @@ def show_list(list_slug):
             },
             'replace_context_menu': True,
             'context_menu': context_menu(
-                list_slug,
+                list_slug=list_slug,
                 imdb_id=movie.get('imdb_id', ''),
                 tmdb_id=movie.get('tmdb_id', '')
             ),
@@ -323,8 +325,8 @@ def open_settings():
 
 def get_api():
     logged_in = False
+    api = TraktListApi()
     while not logged_in:
-        api = TraktListApi()
         try:
             logged_in = api.connect(
                 username=plugin.get_setting('username', unicode),
@@ -342,7 +344,6 @@ def get_api():
             if not try_again:
                 return
             plugin.open_settings()
-            continue
     return api
 
 
