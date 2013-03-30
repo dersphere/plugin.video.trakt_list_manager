@@ -1,0 +1,34 @@
+<?xml version="1.0" encoding="utf-8" standalone="yes"?>
+<strings>
+    <!-- Root menu -->
+    <string id="30000">[B]Add new List[/B]</string>
+    <string id="30001">[B]Add movie to this List[/B]</string>
+    <!-- Context menu -->
+    <string id="30100">Add-on Settings</string>
+    <string id="30101">Delete List</string>
+    <string id="30102">Delete Movie</string>
+    <!-- Dialogs -->
+    <string id="30110">Please enter movie title</string>
+    <string id="30111">Please select the correct Movie</string>
+    <string id="30112">Please select the list</string>
+    <string id="30113">Delete Movie</string>
+    <string id="30114">Are you sure to delete?</string>
+    <string id="30115">Delete List</string>
+    <string id="30116">Are you sure to delete?</string>
+    <!-- Error dialogs -->
+    <string id="30120">Connection error</string>
+    <string id="30121">Wrong User-Credentials</string>
+    <string id="30122">Do you want to change them now?</string>
+    <!-- Noticications -->
+    <string id="30130">No Movie found</string>
+    <string id="30131">Success</string>
+    <!-- Help Dialog -->
+    <string id="30140">Please use context menu</string>
+    <string id="30141">You need to open the context-menu</string>
+    <string id="30142">to choose the action you want</string>
+    <string id="30143"></string>
+    <!-- Settings -->
+    <string id="30300">Username</string>
+    <string id="30301">Password</string>
+    <string id="30302">Default list</string>
+</strings>
