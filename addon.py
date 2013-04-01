@@ -194,7 +194,7 @@ def delete_list(list_slug):
 def add_movie_to_list():
     movie = ask_movie()
     if movie:
-        default_list_slug = plugin.get_setting('default_list_slug')
+        default_list_slug = plugin.get_setting('default_list_slug', str)
         if default_list_slug:
             list_slug = default_list_slug
         else:
@@ -234,7 +234,6 @@ def add_given_movie_to_given_list(list_slug, imdb_id, tmdb_id):
     show_result(result)
 
 
-
 @plugin.route('/list/<list_slug>/movie/delete/<imdb_id>/<tmdb_id>')
 def delete_movie(list_slug, imdb_id, tmdb_id):
     confirmed = xbmcgui.Dialog().yesno(
@@ -269,8 +268,7 @@ def ask_movie():
         _('select_movie'), items
     )
     if selected >= 0:
-        selected_movie = movies[selected]
-        return selected_movie
+        return movies[selected]
 
 
 def ask_trakt_list():
