@@ -177,10 +177,7 @@ def new_list():
     else:
         title = plugin.keyboard(heading=_('enter_list_title'))
     if title:
-        success = api.add_list(title).get('status') == 'success'
-        if success:
-            plugin.notify(msg=_('success'))
-            refresh_on_update()
+        show_result(api.add_list(title))
 
 
 @plugin.route('/list/<list_slug>/delete')
@@ -190,10 +187,7 @@ def delete_list(list_slug):
         _('delete_list_l1')
     )
     if confirmed:
-        success = api.del_list(list_slug).get('status') == 'success'
-        if success:
-            plugin.notify(msg=_('success'))
-            refresh_on_update()
+        show_result(api.del_list(list_slug))
 
 
 @plugin.route('/list/movie/add')
@@ -232,14 +226,13 @@ def add_movie_to_given_list(list_slug):
 
 @plugin.route('/list/<list_slug>/movie/add/<imdb_id>/<tmdb_id>')
 def add_given_movie_to_given_list(list_slug, imdb_id, tmdb_id):
-    success = api.add_movie(
+    result = api.add_movie(
         list_slug=list_slug,
         imdb_id=imdb_id,
         tmdb_id=tmdb_id
     )
-    if success:
-        plugin.notify(msg=_('success'))
-        refresh_on_update()
+    show_result(result)
+
 
 
 @plugin.route('/list/<list_slug>/movie/delete/<imdb_id>/<tmdb_id>')
@@ -249,14 +242,12 @@ def delete_movie(list_slug, imdb_id, tmdb_id):
         _('delete_movie_l1')
     )
     if confirmed:
-        success = api.del_movie(
-            list_slug,
+        result = api.del_movie(
+            list_slug=list_slug,
             imdb_id=imdb_id,
             tmdb_id=tmdb_id
         ).get('status') == 'success'
-        if success:
-            plugin.notify(msg=_('success'))
-            refresh_on_update()
+        show_result(result)
 
 
 def ask_movie():
@@ -292,9 +283,16 @@ def ask_trakt_list():
         return trakt_lists[selected]
 
 
-def refresh_on_update():
-    if 'refresh' in plugin.request.args:
-        xbmc.executebuiltin('Container.Refresh')
+def show_result(result):
+    if result.get('status') == 'success':
+        plugin.notify(msg=_('success'))
+        if 'refresh' in plugin.request.args:
+            xbmc.executebuiltin('Container.Refresh')
+    else:
+        xbmcgui.Dialog().ok(
+            _('problem'),
+            result.get('error', _('unknown'))
+        )
 
 
 @plugin.route('/help')
