@@ -18,7 +18,8 @@
 #
 
 from xbmcswift2 import Plugin, xbmc, xbmcgui
-from resources.lib.api import TraktListApi, AuthenticationError
+from resources.lib.api import TraktListApi, AuthenticationError, \
+    LIST_PRIVACY_IDS
 
 API_KEY = '2ce240ab6543ebd7d84abe5268a822d5'
 
@@ -177,7 +178,15 @@ def new_list():
     else:
         title = plugin.keyboard(heading=_('enter_list_title'))
     if title:
-        show_result(api.add_list(title))
+        privacy_id = plugin.get_setting(
+            'default_pricacy',
+            choices=LIST_PRIVACY_IDS
+        )
+        result = api.add_list(
+            name=title,
+            privacy_id=privacy_id
+        )
+        show_result(result)
 
 
 @plugin.route('/list/<list_slug>/delete')
