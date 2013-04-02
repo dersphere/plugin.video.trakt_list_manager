@@ -1,2 +1,8 @@
+0.0.2
+ - added possibility to set a default list
+ - added watchlist (read) support
+ - new icon
+
 0.0.1
-- initial release
+ - initial release
+ 
