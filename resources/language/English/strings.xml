@@ -1,8 +1,8 @@
 <?xml version="1.0" encoding="utf-8" standalone="yes"?>
 <strings>
     <!-- Root menu -->
-    <string id="30000">[B]Add new List[/B]</string>
-    <string id="30001">[B]Add movie to this List[/B]</string>
+    <string id="30000">[B]Add new Custom List[/B]</string>
+    <string id="30001">[B]Add new Movie[/B]</string>
     <!-- Context menu -->
     <string id="30100">Add-on Settings</string>
     <string id="30101">Delete List</string>
