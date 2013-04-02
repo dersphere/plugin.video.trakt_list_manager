@@ -63,6 +63,10 @@ class TraktListApi():
             self._reset_connection()
         return self.connected
 
+    def get_watchlist(self):
+        path = 'user/watchlist/movies.json/%(api_key)s/%(username)s'
+        return self._api_call(path, auth=True)
+
     def get_lists(self):
         path = 'user/lists.json/%(api_key)s/%(username)s'
         return self._api_call(path, auth=True)

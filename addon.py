@@ -25,11 +25,11 @@ API_KEY = '2ce240ab6543ebd7d84abe5268a822d5'
 
 STRINGS = {
     # Root menu entries
-    'new_list': 30000,
+    'new_custom_list': 30000,
     'add_movie': 30001,
     # Context menu
     'addon_settings': 30100,
-    'delete_list': 30101,
+    'delete_custom_list': 30101,
     'delete_movie': 30102,
     # Dialogs
     'enter_movie_title': 30110,
@@ -37,8 +37,8 @@ STRINGS = {
     'select_list': 30112,
     'delete_movie_head': 30113,
     'delete_movie_l1': 30114,
-    'delete_list_head': 30115,
-    'delete_list_l1': 30116,
+    'delete_custom_list_head': 30115,
+    'delete_custom_list_l1': 30116,
     # Error dialogs
     'connection_error': 30120,
     'wrong_credentials': 30121,
@@ -58,13 +58,24 @@ plugin = Plugin()
 
 
 @plugin.route('/')
-def show_lists():
+def show_root():
+    items = [
+        {'label': _('show_watchlist'),
+         'path': plugin.url_for(endpoint='show_watchlist')},
+        {'label': _('show_custom_lists'),
+         'path': plugin.url_for(endpoint='show_custom_lists')},
+    ]
+    return plugin.finish(items)
+
+
+@plugin.route('/customlists/')
+def show_custom_lists():
     def context_menu(list_slug):
         return [
             (
-                _('delete_list'),
+                _('delete_custom_list'),
                 'XBMC.RunPlugin(%s)' % plugin.url_for(
-                    endpoint='delete_list',
+                    endpoint='delete_custom_list',
                     list_slug=list_slug,
                     refresh='true',
                 )
@@ -84,22 +95,22 @@ def show_lists():
             list_slug=trakt_list['slug']
         ),
         'path': plugin.url_for(
-            endpoint='show_list',
+            endpoint='show_custom_list',
             list_slug=trakt_list['slug']
         )
     } for trakt_list in api.get_lists()]
     items.append({
-        'label': _('new_list'),
+        'label': _('new_custom_list'),
         'path': plugin.url_for(
-            endpoint='new_list',
+            endpoint='new_custom_list',
             refresh='true',
         )
     })
     return plugin.finish(items)
 
 
-@plugin.route('/list/<list_slug>/movies/')
-def show_list(list_slug):
+@plugin.route('/customlists/<list_slug>/movies/')
+def show_custom_list(list_slug):
     def context_menu(list_slug, imdb_id, tmdb_id):
         return [
             (
@@ -171,8 +182,49 @@ def show_list(list_slug):
     return plugin.finish(items, sort_methods=sort_methods)
 
 
-@plugin.route('/list/new')
-def new_list():
+@plugin.route('/watchlist/')
+def show_watchlist():
+    def context_menu():
+        return [
+            (
+                _('addon_settings'),
+                'XBMC.RunPlugin(%s)' % plugin.url_for(
+                    endpoint='open_settings'
+                )
+            ),
+        ]
+
+    items = [{
+        'label': movie['title'],
+        'thumbnail': movie['images']['poster'],
+        'info': {
+            'count': i,
+            'code': movie.get('imdb_id', ''),
+            'year': movie.get('year', 0),
+            'plot': movie.get('overview', ''),
+            'mpaa': movie.get('certification', ''),
+            'genre': ', '.join(movie.get('genres', [])),
+            'tagline': movie.get('tagline', ''),
+            'rating': movie.get('ratings', {}).get('percentage', 0) / 10.0,
+            'votes': movie.get('ratings', {}).get('votes', 0)
+        },
+        'stream_info': {
+            'video': {'duration': movie.get('runtime', 0) * 60}
+        },
+        'replace_context_menu': True,
+        'context_menu': context_menu(),
+        'properties': {
+            'fanart_image': movie['images']['fanart'],
+        },
+        'path': plugin.url_for(
+            endpoint='show_help'
+        ),
+    } for i, movie in enumerate(api.get_watchlist())]
+    return items
+
+
+@plugin.route('/customlists/new')
+def new_custom_list():
     if 'title' in plugin.request.args:
         title = plugin.request.args['title'][0]
     else:
@@ -189,17 +241,17 @@ def new_list():
         show_result(result)
 
 
-@plugin.route('/list/<list_slug>/delete')
-def delete_list(list_slug):
+@plugin.route('/customlists/<list_slug>/delete')
+def delete_custom_list(list_slug):
     confirmed = xbmcgui.Dialog().yesno(
-        _('delete_list_head'),
-        _('delete_list_l1')
+        _('delete_custom_list_head'),
+        _('delete_custom_list_l1')
     )
     if confirmed:
         show_result(api.del_list(list_slug))
 
 
-@plugin.route('/list/movie/add')
+@plugin.route('/customlists/movie/add')
 def add_movie_to_list():
     movie = ask_movie()
     if movie:
@@ -207,10 +259,10 @@ def add_movie_to_list():
         if default_list_slug:
             list_slug = default_list_slug
         else:
-            trakt_list = ask_trakt_list()
-            if not trakt_list:
+            custom_list = ask_custom_list()
+            if not custom_list:
                 return
-            list_slug = trakt_list['slug']
+            list_slug = custom_list['slug']
         if list_slug:
             return plugin.redirect(plugin.url_for(
                 endpoint=add_given_movie_to_given_list,
@@ -220,7 +272,7 @@ def add_movie_to_list():
             ))
 
 
-@plugin.route('/list/<list_slug>/movie/add')
+@plugin.route('/customlists/<list_slug>/movie/add')
 def add_movie_to_given_list(list_slug):
     movie = ask_movie()
     if movie:
@@ -233,7 +285,7 @@ def add_movie_to_given_list(list_slug):
         ))
 
 
-@plugin.route('/list/<list_slug>/movie/add/<imdb_id>/<tmdb_id>')
+@plugin.route('/customlists/<list_slug>/movie/add/<imdb_id>/<tmdb_id>')
 def add_given_movie_to_given_list(list_slug, imdb_id, tmdb_id):
     result = api.add_movie(
         list_slug=list_slug,
@@ -243,7 +295,7 @@ def add_given_movie_to_given_list(list_slug, imdb_id, tmdb_id):
     show_result(result)
 
 
-@plugin.route('/list/<list_slug>/movie/delete/<imdb_id>/<tmdb_id>')
+@plugin.route('/customlists/<list_slug>/movie/delete/<imdb_id>/<tmdb_id>')
 def delete_movie(list_slug, imdb_id, tmdb_id):
     confirmed = xbmcgui.Dialog().yesno(
         _('delete_movie_head'),
@@ -280,14 +332,14 @@ def ask_movie():
         return movies[selected]
 
 
-def ask_trakt_list():
-    trakt_lists = api.get_lists()
-    items = [trakt_list['name'] for trakt_list in trakt_lists]
+def ask_custom_list():
+    custom_lists = api.get_lists()
+    items = [custom_list['name'] for custom_list in custom_lists]
     selected = xbmcgui.Dialog().select(
         _('select_list'), items
     )
     if selected >= 0:
-        return trakt_lists[selected]
+        return custom_lists[selected]
 
 
 def show_result(result):
@@ -314,7 +366,7 @@ def show_help():
 
 @plugin.route('/settings/default_list')
 def set_default_list():
-    default_list = ask_trakt_list()
+    default_list = ask_custom_list()
     if default_list:
         plugin.set_setting('default_list', default_list['name'])
         plugin.set_setting('default_list_slug', default_list['slug'])
