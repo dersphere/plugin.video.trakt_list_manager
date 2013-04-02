@@ -14,6 +14,7 @@
         <source>https://github.com/dersphere/plugin.video.trakt_list_manager</source>
         <forum></forum>
         <email>sphere@dersphere.de</email>
+        <license>GNU GENERAL PUBLIC LICENSE. Version 2, June 1991</license>
         <summary lang="en">Manage Trakt.tv Lists from XBMC</summary>
         <description lang="en">With Trakt.tv List Manager you can manage your Trakt.tv Lists.[CR]Current Features:[CR]- Create/Delete/View Custom Lists[CR]- Add/Delete Movies from Custom Lists[CR]- View Watchlist</description>
     </extension>
