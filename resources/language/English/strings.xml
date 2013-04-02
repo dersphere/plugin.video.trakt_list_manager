@@ -3,6 +3,8 @@
     <!-- Root menu -->
     <string id="30000">[B]Add new Custom List[/B]</string>
     <string id="30001">[B]Add new Movie[/B]</string>
+    <string id="30002">Show Watchlist</string>
+    <string id="30003">Show Custom Lists</string>
     <!-- Context menu -->
     <string id="30100">Add-on Settings</string>
     <string id="30101">Delete List</string>

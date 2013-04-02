@@ -27,6 +27,8 @@ STRINGS = {
     # Root menu entries
     'new_custom_list': 30000,
     'add_movie': 30001,
+    'show_watchlist': 30002,
+    'show_custom_lists': 30003,
     # Context menu
     'addon_settings': 30100,
     'delete_custom_list': 30101,
