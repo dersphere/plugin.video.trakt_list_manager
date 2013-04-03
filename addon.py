@@ -33,6 +33,7 @@ STRINGS = {
     'addon_settings': 30100,
     'delete_custom_list': 30101,
     'delete_movie': 30102,
+    'movie_info': 30103,
     # Dialogs
     'enter_movie_title': 30110,
     'select_movie': 30111,
@@ -116,6 +117,10 @@ def show_custom_list(list_slug):
     def context_menu(list_slug, imdb_id, tmdb_id):
         return [
             (
+                _('movie_info'),
+                'XBMC.Action(Info)'
+            ),
+            (
                 _('delete_movie'),
                 'XBMC.RunPlugin(%s)' % plugin.url_for(
                     endpoint='delete_movie',
@@ -188,6 +193,10 @@ def show_custom_list(list_slug):
 def show_watchlist():
     def context_menu():
         return [
+            (
+                _('movie_info'),
+                'XBMC.Action(Info)'
+            ),
             (
                 _('addon_settings'),
                 'XBMC.RunPlugin(%s)' % plugin.url_for(
