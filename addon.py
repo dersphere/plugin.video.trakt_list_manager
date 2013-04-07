@@ -242,7 +242,7 @@ def new_custom_list():
         title = plugin.keyboard(heading=_('enter_list_title'))
     if title:
         privacy_id = plugin.get_setting(
-            'default_pricacy',
+            'default_privacy',
             choices=LIST_PRIVACY_IDS
         )
         result = api.add_list(
