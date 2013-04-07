@@ -400,6 +400,7 @@ def get_api():
                 username=plugin.get_setting('username', unicode),
                 password=plugin.get_setting('password', unicode),
                 api_key=API_KEY,
+                use_https=plugin.get_setting('use_https', bool),
             )
         except AuthenticationError:
             logged_in = False

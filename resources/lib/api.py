@@ -23,7 +23,7 @@ from urllib2 import urlopen, Request, HTTPError, URLError
 from hashlib import sha1
 
 
-API_URL = 'http://api.trakt.tv/'
+API_URL = 'api.trakt.tv/'
 USER_AGENT = 'XBMC Add-on Trakt.tv List Manager'
 
 LIST_PRIVACY_IDS = (
@@ -53,11 +53,14 @@ class TraktListApi():
         self._username = None
         self._password = None
         self._api_key = None
+        self._use_https = True
 
-    def connect(self, username=None, password=None, api_key=None):
+    def connect(self, username=None, password=None, api_key=None,
+                use_https=True):
         self._username = username
         self._password = sha1(password).hexdigest()
         self._api_key = api_key
+        self._use_https = use_https
         self.connected = self._test_credentials()
         if not self.connected:
             self._reset_connection()
@@ -130,7 +133,7 @@ class TraktListApi():
         return self._api_call(path, auth=True).get('status') == 'success'
 
     def _api_call(self, path, post={}, auth=False):
-        url = API_URL + path % {
+        url = self._api_url + path % {
             'api_key': self._api_key,
             'username': self._username
         }
@@ -160,6 +163,10 @@ class TraktListApi():
             raise ConnectionError(error)
         self.log('_api_call response: %s' % repr(json_data))
         return json_data
+
+    @property
+    def _api_url(self):
+        return '%s://%s' % ('https' if self._use_https else 'http', API_URL)
 
     def log(self, text):
         print u'[%s]: %s' % (self.__class__.__name__, repr(text))
