@@ -113,6 +113,20 @@ class TraktListApi():
         }
         return self._api_call(path, post=post, auth=True)
 
+    def add_movie_to_watchlist(self, imdb_id=None, tmdb_id=None):
+        if not tmdb_id and not imdb_id:
+            raise AttributeError('Need one of tmdb_id, imdb_id')
+        item = {'type': 'movie'}
+        if tmdb_id:
+            item['tmdb_id'] = tmdb_id
+        if imdb_id:
+            item['imdb_id'] = imdb_id
+        path = 'movie/watchlist/%(api_key)s'
+        post = {
+            'movies': [item],
+        }
+        return self._api_call(path, post=post, auth=True)
+
     def del_movie_from_list(self, list_slug, imdb_id=None, tmdb_id=None):
         if not tmdb_id and not imdb_id:
             raise AttributeError('Need one of tmdb_id, imdb_id')
@@ -125,6 +139,20 @@ class TraktListApi():
         post = {
             'slug': list_slug,
             'items': [item],
+        }
+        return self._api_call(path, post=post, auth=True)
+
+    def del_movie_from_watchlist(self, imdb_id=None, tmdb_id=None):
+        if not tmdb_id and not imdb_id:
+            raise AttributeError('Need one of tmdb_id, imdb_id')
+        item = {'type': 'movie'}
+        if tmdb_id:
+            item['tmdb_id'] = tmdb_id
+        if imdb_id:
+            item['imdb_id'] = imdb_id
+        path = 'movie/unwatchlist/%(api_key)s'
+        post = {
+            'movies': [item],
         }
         return self._api_call(path, post=post, auth=True)
 

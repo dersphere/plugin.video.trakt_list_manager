@@ -123,7 +123,7 @@ def show_custom_list(list_slug):
             (
                 _('delete_movie'),
                 'XBMC.RunPlugin(%s)' % plugin.url_for(
-                    endpoint='delete_movie',
+                    endpoint='delete_movie_from_list',
                     list_slug=list_slug,
                     imdb_id=imdb_id,
                     tmdb_id=tmdb_id,
@@ -191,11 +191,20 @@ def show_custom_list(list_slug):
 
 @plugin.route('/watchlist/')
 def show_watchlist():
-    def context_menu():
+    def context_menu(imdb_id, tmdb_id):
         return [
             (
                 _('movie_info'),
                 'XBMC.Action(Info)'
+            ),
+            (
+                _('delete_movie'),
+                'XBMC.RunPlugin(%s)' % plugin.url_for(
+                    endpoint='delete_movie_from_watchlist',
+                    imdb_id=imdb_id,
+                    tmdb_id=tmdb_id,
+                    refresh='true',
+                )
             ),
             (
                 _('addon_settings'),
@@ -223,7 +232,10 @@ def show_watchlist():
             'video': {'duration': movie.get('runtime', 0) * 60}
         },
         'replace_context_menu': True,
-        'context_menu': context_menu(),
+        'context_menu': context_menu(
+            imdb_id=movie.get('imdb_id', ''),
+            tmdb_id=movie.get('tmdb_id', '')
+        ),
         'properties': {
             'fanart_image': movie['images']['fanart'],
         },
@@ -231,7 +243,40 @@ def show_watchlist():
             endpoint='show_help'
         ),
     } for i, movie in enumerate(api.get_watchlist())]
+    items.append({
+        'label': _('add_movie'),
+        'info': {'count': i + 1},
+        'path': plugin.url_for(
+            endpoint='add_movie_to_watchlist',
+            refresh=True,
+        )
+    })
     return items
+
+
+@plugin.route('/watchlist/movie/add')
+def add_movie_to_watchlist():
+    movie = get_movie()
+    if movie:
+        result = api.add_movie_to_watchlist(
+            imdb_id=movie['imdb_id'],
+            tmdb_id=movie['tmdb_id']
+        )
+        show_result(result)
+
+
+@plugin.route('/watchlist/movie/delete/<imdb_id>/<tmdb_id>')
+def delete_movie_from_watchlist(imdb_id, tmdb_id):
+    confirmed = xbmcgui.Dialog().yesno(
+        _('delete_movie_head'),
+        _('delete_movie_l1')
+    )
+    if confirmed:
+        result = api.del_movie_from_watchlist(
+            imdb_id=imdb_id,
+            tmdb_id=tmdb_id
+        )
+        show_result(result)
 
 
 @plugin.route('/customlists/new')
@@ -296,7 +341,7 @@ def add_movie_to_given_list(list_slug):
 
 
 @plugin.route('/customlists/<list_slug>/movie/delete/<imdb_id>/<tmdb_id>')
-def delete_movie(list_slug, imdb_id, tmdb_id):
+def delete_movie_from_list(list_slug, imdb_id, tmdb_id):
     confirmed = xbmcgui.Dialog().yesno(
         _('delete_movie_head'),
         _('delete_movie_l1')
