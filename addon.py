@@ -22,16 +22,17 @@ from resources.lib.api import TraktListApi, AuthenticationError, \
     LIST_PRIVACY_IDS
 
 API_KEY = '2ce240ab6543ebd7d84abe5268a822d5'
+WATCHLIST_SLUG = 'WATCHLIST'  # hacky but reduces code amount...
 
 STRINGS = {
     # Root menu entries
-    'new_custom_list': 30000,
+    'new_customlist': 30000,
     'add_movie': 30001,
     'show_watchlist': 30002,
-    'show_custom_lists': 30003,
+    'show_customlists': 30003,
     # Context menu
     'addon_settings': 30100,
-    'delete_custom_list': 30101,
+    'delete_customlist': 30101,
     'delete_movie': 30102,
     'movie_info': 30103,
     # Dialogs
@@ -40,8 +41,8 @@ STRINGS = {
     'select_list': 30112,
     'delete_movie_head': 30113,
     'delete_movie_l1': 30114,
-    'delete_custom_list_head': 30115,
-    'delete_custom_list_l1': 30116,
+    'delete_customlist_head': 30115,
+    'delete_customlist_l1': 30116,
     # Error dialogs
     'connection_error': 30120,
     'wrong_credentials': 30121,
@@ -65,20 +66,20 @@ def show_root():
     items = [
         {'label': _('show_watchlist'),
          'path': plugin.url_for(endpoint='show_watchlist')},
-        {'label': _('show_custom_lists'),
-         'path': plugin.url_for(endpoint='show_custom_lists')},
+        {'label': _('show_customlists'),
+         'path': plugin.url_for(endpoint='show_customlists')},
     ]
     return plugin.finish(items)
 
 
 @plugin.route('/customlists/')
-def show_custom_lists():
+def show_customlists():
     def context_menu(list_slug):
         return [
             (
-                _('delete_custom_list'),
+                _('delete_customlist'),
                 'XBMC.RunPlugin(%s)' % plugin.url_for(
-                    endpoint='delete_custom_list',
+                    endpoint='delete_customlist',
                     list_slug=list_slug,
                     refresh='true',
                 )
@@ -98,14 +99,14 @@ def show_custom_lists():
             list_slug=trakt_list['slug']
         ),
         'path': plugin.url_for(
-            endpoint='show_custom_list',
+            endpoint='show_customlist',
             list_slug=trakt_list['slug']
         )
     } for trakt_list in api.get_lists()]
     items.append({
-        'label': _('new_custom_list'),
+        'label': _('new_customlist'),
         'path': plugin.url_for(
-            endpoint='new_custom_list',
+            endpoint='new_customlist',
             refresh='true',
         )
     })
@@ -113,7 +114,7 @@ def show_custom_lists():
 
 
 @plugin.route('/customlists/<list_slug>/movies/')
-def show_custom_list(list_slug):
+def show_customlist(list_slug):
     def context_menu(list_slug, imdb_id, tmdb_id):
         return [
             (
@@ -123,7 +124,7 @@ def show_custom_list(list_slug):
             (
                 _('delete_movie'),
                 'XBMC.RunPlugin(%s)' % plugin.url_for(
-                    endpoint='delete_movie_from_list',
+                    endpoint='delete_movie_from_customlist',
                     list_slug=list_slug,
                     imdb_id=imdb_id,
                     tmdb_id=tmdb_id,
@@ -180,7 +181,7 @@ def show_custom_list(list_slug):
         'label': _('add_movie'),
         'info': {'count': i + 1},
         'path': plugin.url_for(
-            endpoint='add_movie_to_given_list',
+            endpoint='add_movie_to_customlist',
             list_slug=list_slug,
             refresh=True,
         )
@@ -189,7 +190,7 @@ def show_custom_list(list_slug):
     return plugin.finish(items, sort_methods=sort_methods)
 
 
-@plugin.route('/watchlist/')
+@plugin.route('/watchlist/movies/')
 def show_watchlist():
     def context_menu(imdb_id, tmdb_id):
         return [
@@ -280,7 +281,7 @@ def delete_movie_from_watchlist(imdb_id, tmdb_id):
 
 
 @plugin.route('/customlists/new')
-def new_custom_list():
+def new_customlist():
     if 'title' in plugin.request.args:
         title = plugin.request.args['title'][0]
     else:
@@ -298,16 +299,16 @@ def new_custom_list():
 
 
 @plugin.route('/customlists/<list_slug>/delete')
-def delete_custom_list(list_slug):
+def delete_customlist(list_slug):
     confirmed = xbmcgui.Dialog().yesno(
-        _('delete_custom_list_head'),
-        _('delete_custom_list_l1')
+        _('delete_customlist_head'),
+        _('delete_customlist_l1')
     )
     if confirmed:
         show_result(api.del_list(list_slug))
 
 
-@plugin.route('/customlists/movie/add')
+@plugin.route('/movies/add')
 def add_movie_to_list():
     movie = get_movie()
     if movie:
@@ -315,11 +316,17 @@ def add_movie_to_list():
         if default_list_slug:
             list_slug = default_list_slug
         else:
-            custom_list = ask_custom_list()
-            if not custom_list:
+            list_to_add = ask_list()
+            if not list_to_add:
                 return
-            list_slug = custom_list['slug']
-        if list_slug:
+            list_slug = list_to_add['slug']
+        if list_slug == WATCHLIST_SLUG:
+            result = api.add_movie_to_watchlist(
+                imdb_id=movie['imdb_id'],
+                tmdb_id=movie['tmdb_id']
+            )
+            show_result(result)
+        elif list_slug:
             result = api.add_movie_to_list(
                 list_slug=list_slug,
                 imdb_id=movie['imdb_id'],
@@ -329,7 +336,7 @@ def add_movie_to_list():
 
 
 @plugin.route('/customlists/<list_slug>/movie/add')
-def add_movie_to_given_list(list_slug):
+def add_movie_to_customlist(list_slug):
     movie = get_movie()
     if movie:
         result = api.add_movie_to_list(
@@ -341,7 +348,7 @@ def add_movie_to_given_list(list_slug):
 
 
 @plugin.route('/customlists/<list_slug>/movie/delete/<imdb_id>/<tmdb_id>')
-def delete_movie_from_list(list_slug, imdb_id, tmdb_id):
+def delete_movie_from_customlist(list_slug, imdb_id, tmdb_id):
     confirmed = xbmcgui.Dialog().yesno(
         _('delete_movie_head'),
         _('delete_movie_l1')
@@ -382,14 +389,14 @@ def get_movie():
         return movies[selected]
 
 
-def ask_custom_list():
-    custom_lists = api.get_lists()
-    items = [custom_list['name'] for custom_list in custom_lists]
+def ask_list():
+    customlists = api.get_lists()
+    lists = [{'name': ('watchlist'), 'slug': WATCHLIST_SLUG}] + customlists
     selected = xbmcgui.Dialog().select(
-        _('select_list'), items
+        _('select_list'), [l['name'] for l in lists]
     )
     if selected >= 0:
-        return custom_lists[selected]
+        return lists[selected]
 
 
 def show_result(result):
@@ -416,7 +423,7 @@ def show_help():
 
 @plugin.route('/settings/default_list')
 def set_default_list():
-    default_list = ask_custom_list()
+    default_list = ask_list()
     if default_list:
         plugin.set_setting('default_list', default_list['name'])
         plugin.set_setting('default_list_slug', default_list['slug'])
