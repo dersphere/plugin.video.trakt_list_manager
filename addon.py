@@ -264,7 +264,7 @@ def delete_custom_list(list_slug):
 
 @plugin.route('/customlists/movie/add')
 def add_movie_to_list():
-    movie = ask_movie()
+    movie = get_movie()
     if movie:
         default_list_slug = plugin.get_setting('default_list_slug', str)
         if default_list_slug:
@@ -275,35 +275,24 @@ def add_movie_to_list():
                 return
             list_slug = custom_list['slug']
         if list_slug:
-            return plugin.redirect(plugin.url_for(
-                endpoint=add_given_movie_to_given_list,
+            result = api.add_movie(
                 list_slug=list_slug,
                 imdb_id=movie['imdb_id'],
                 tmdb_id=movie['tmdb_id']
-            ))
+            )
+            show_result(result)
 
 
 @plugin.route('/customlists/<list_slug>/movie/add')
 def add_movie_to_given_list(list_slug):
-    movie = ask_movie()
+    movie = get_movie()
     if movie:
-        return plugin.redirect(plugin.url_for(
-            endpoint=add_given_movie_to_given_list,
+        result = api.add_movie(
             list_slug=list_slug,
             imdb_id=movie['imdb_id'],
-            tmdb_id=movie['tmdb_id'],
-            refresh='true',
-        ))
-
-
-@plugin.route('/customlists/<list_slug>/movie/add/<imdb_id>/<tmdb_id>')
-def add_given_movie_to_given_list(list_slug, imdb_id, tmdb_id):
-    result = api.add_movie(
-        list_slug=list_slug,
-        imdb_id=imdb_id,
-        tmdb_id=tmdb_id
-    )
-    show_result(result)
+            tmdb_id=movie['tmdb_id']
+        )
+        show_result(result)
 
 
 @plugin.route('/customlists/<list_slug>/movie/delete/<imdb_id>/<tmdb_id>')
@@ -321,14 +310,19 @@ def delete_movie(list_slug, imdb_id, tmdb_id):
         show_result(result)
 
 
-def ask_movie():
-    if 'title' in plugin.request.args:
-        search_title = plugin.request.args['title'][0]
-    else:
-        search_title = plugin.keyboard(heading=_('enter_movie_title'))
-    if not search_title:
+def get_movie():
+    movie = {
+        'imdb_id': plugin.request.args.get('imdb_id', [''])[0],
+        'tmdb_id': plugin.request.args.get('tmdb_id', [''])[0],
+        'title': plugin.request.args.get('title', [''])[0],
+    }
+    if movie.get('imdb_id') or movie.get('tmdb_id'):
+        return movie
+    if not movie.get('title'):
+        movie['title'] = plugin.keyboard(heading=_('enter_movie_title'))
+    if not movie.get('title'):
         return
-    movies = api.search_movie(search_title)
+    movies = api.search_movie(movie['title'])
     if not movies:
         plugin.notify(msg=_('no_movie_found'))
         return
