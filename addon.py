@@ -43,6 +43,7 @@ STRINGS = {
     'delete_movie_l1': 30114,
     'delete_customlist_head': 30115,
     'delete_customlist_l1': 30116,
+    'watchlist': 30117,
     # Error dialogs
     'connection_error': 30120,
     'wrong_credentials': 30121,
