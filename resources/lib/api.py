@@ -98,7 +98,7 @@ class TraktListApi():
         }
         return self._api_call(path, post=post, auth=True)
 
-    def add_movie(self, list_slug, imdb_id=None, tmdb_id=None):
+    def add_movie_to_list(self, list_slug, imdb_id=None, tmdb_id=None):
         if not tmdb_id and not imdb_id:
             raise AttributeError('Need one of tmdb_id, imdb_id')
         item = {'type': 'movie'}
@@ -113,7 +113,7 @@ class TraktListApi():
         }
         return self._api_call(path, post=post, auth=True)
 
-    def del_movie(self, list_slug, imdb_id=None, tmdb_id=None):
+    def del_movie_from_list(self, list_slug, imdb_id=None, tmdb_id=None):
         if not tmdb_id and not imdb_id:
             raise AttributeError('Need one of tmdb_id, imdb_id')
         item = {'type': 'movie'}

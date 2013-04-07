@@ -275,7 +275,7 @@ def add_movie_to_list():
                 return
             list_slug = custom_list['slug']
         if list_slug:
-            result = api.add_movie(
+            result = api.add_movie_to_list(
                 list_slug=list_slug,
                 imdb_id=movie['imdb_id'],
                 tmdb_id=movie['tmdb_id']
@@ -287,7 +287,7 @@ def add_movie_to_list():
 def add_movie_to_given_list(list_slug):
     movie = get_movie()
     if movie:
-        result = api.add_movie(
+        result = api.add_movie_to_list(
             list_slug=list_slug,
             imdb_id=movie['imdb_id'],
             tmdb_id=movie['tmdb_id']
@@ -302,7 +302,7 @@ def delete_movie(list_slug, imdb_id, tmdb_id):
         _('delete_movie_l1')
     )
     if confirmed:
-        result = api.del_movie(
+        result = api.del_movie_from_list(
             list_slug=list_slug,
             imdb_id=imdb_id,
             tmdb_id=tmdb_id
