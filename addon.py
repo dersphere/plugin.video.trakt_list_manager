@@ -306,7 +306,7 @@ def delete_movie(list_slug, imdb_id, tmdb_id):
             list_slug=list_slug,
             imdb_id=imdb_id,
             tmdb_id=tmdb_id
-        ).get('status') == 'success'
+        )
         show_result(result)
 
 
