@@ -216,6 +216,7 @@ def show_watchlist():
             ),
         ]
 
+    i = 0
     items = [{
         'label': movie['title'],
         'thumbnail': movie['images']['poster'],
