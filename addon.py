@@ -256,7 +256,7 @@ def show_watchlist():
     return items
 
 
-@plugin.route('/watchlist/movie/add')
+@plugin.route('/watchlist/movies/add')
 def add_movie_to_watchlist():
     movie = get_movie()
     if movie:
@@ -267,7 +267,7 @@ def add_movie_to_watchlist():
         show_result(result)
 
 
-@plugin.route('/watchlist/movie/delete/<imdb_id>/<tmdb_id>')
+@plugin.route('/watchlist/movies/delete/<imdb_id>/<tmdb_id>')
 def delete_movie_from_watchlist(imdb_id, tmdb_id):
     confirmed = xbmcgui.Dialog().yesno(
         _('delete_movie_head'),
@@ -336,7 +336,7 @@ def add_movie_to_list():
             show_result(result)
 
 
-@plugin.route('/customlists/<list_slug>/movie/add')
+@plugin.route('/customlists/<list_slug>/movies/add')
 def add_movie_to_customlist(list_slug):
     movie = get_movie()
     if movie:
@@ -348,7 +348,7 @@ def add_movie_to_customlist(list_slug):
         show_result(result)
 
 
-@plugin.route('/customlists/<list_slug>/movie/delete/<imdb_id>/<tmdb_id>')
+@plugin.route('/customlists/<list_slug>/movies/delete/<imdb_id>/<tmdb_id>')
 def delete_movie_from_customlist(list_slug, imdb_id, tmdb_id):
     confirmed = xbmcgui.Dialog().yesno(
         _('delete_movie_head'),
