@@ -494,7 +494,6 @@ def _(string_id):
         return string_id
 
 if __name__ == '__main__':
-    get_xbmc_movies()
     api = get_api()
     if api:
         plugin.run()
