@@ -18,7 +18,7 @@
 #
 
 import json
-from urllib import quote_plus as quote
+from urllib import quote_plus as quote, urlencode
 from urllib2 import urlopen, Request, HTTPError, URLError
 from hashlib import sha1
 
@@ -67,23 +67,23 @@ class TraktListApi():
         return self.connected
 
     def get_watchlist(self):
-        path = 'user/watchlist/movies.json/%(api_key)s/%(username)s'
+        path = 'user/watchlist/movies.json/{api_key}/{username}'
         return self._api_call(path, auth=True)
 
     def get_lists(self):
-        path = 'user/lists.json/%(api_key)s/%(username)s'
+        path = 'user/lists.json/{api_key}/{username}'
         return self._api_call(path, auth=True)
 
     def search_movie(self, query):
-        path = 'search/movies.json/%(api_key)s/' + quote(query)
+        path = 'search/movies.json/{api_key}/?' + urlencode({'query': query})
         return self._api_call(path)
 
     def get_list(self, list_slug):
-        path = 'user/list.json/%(api_key)s/%(username)s/' + quote(list_slug)
+        path = 'user/list.json/{api_key}/{username}/' + quote(list_slug)
         return self._api_call(path, auth=True)
 
     def add_list(self, name, privacy_id=None, description=None):
-        path = 'lists/add/%(api_key)s'
+        path = 'lists/add/{api_key}'
         post = {
             'name': name,
             'description': description or '',
@@ -92,7 +92,7 @@ class TraktListApi():
         return self._api_call(path, post=post, auth=True)
 
     def del_list(self, list_slug):
-        path = 'lists/delete/%(api_key)s'
+        path = 'lists/delete/{api_key}'
         post = {
             'slug': list_slug
         }
@@ -106,7 +106,7 @@ class TraktListApi():
             item['tmdb_id'] = tmdb_id
         if imdb_id:
             item['imdb_id'] = imdb_id
-        path = 'lists/items/add/%(api_key)s'
+        path = 'lists/items/add/{api_key}'
         post = {
             'slug': list_slug,
             'items': [item],
@@ -121,7 +121,7 @@ class TraktListApi():
             item['tmdb_id'] = tmdb_id
         if imdb_id:
             item['imdb_id'] = imdb_id
-        path = 'movie/watchlist/%(api_key)s'
+        path = 'movie/watchlist/{api_key}'
         post = {
             'movies': [item],
         }
@@ -135,7 +135,7 @@ class TraktListApi():
             item['tmdb_id'] = tmdb_id
         if imdb_id:
             item['imdb_id'] = imdb_id
-        path = 'lists/items/delete/%(api_key)s'
+        path = 'lists/items/delete/{api_key}'
         post = {
             'slug': list_slug,
             'items': [item],
@@ -150,21 +150,21 @@ class TraktListApi():
             item['tmdb_id'] = tmdb_id
         if imdb_id:
             item['imdb_id'] = imdb_id
-        path = 'movie/unwatchlist/%(api_key)s'
+        path = 'movie/unwatchlist/{api_key}'
         post = {
             'movies': [item],
         }
         return self._api_call(path, post=post, auth=True)
 
     def _test_credentials(self):
-        path = 'account/test/%(api_key)s'
+        path = 'account/test/{api_key}'
         return self._api_call(path, auth=True).get('status') == 'success'
 
     def _api_call(self, path, post={}, auth=False):
-        url = self._api_url + path % {
-            'api_key': self._api_key,
-            'username': self._username
-        }
+        url = self._api_url + path.format(
+            api_key=self._api_key,
+            username=self._username,
+        )
         self.log('_api_call using url: %s' % url)
         if auth:
             post.update({
