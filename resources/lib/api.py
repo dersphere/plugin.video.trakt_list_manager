@@ -25,6 +25,7 @@ from hashlib import sha1
 
 API_URL = 'api.trakt.tv/'
 USER_AGENT = 'XBMC Add-on Trakt.tv List Manager'
+NONE = 'NONE'
 
 LIST_PRIVACY_IDS = (
     'private',
@@ -102,9 +103,9 @@ class TraktListApi():
         if not tmdb_id and not imdb_id:
             raise AttributeError('Need one of tmdb_id, imdb_id')
         item = {'type': 'movie'}
-        if tmdb_id:
+        if tmdb_id and tmdb_id != NONE:
             item['tmdb_id'] = tmdb_id
-        if imdb_id:
+        if imdb_id and imdb_id != NONE:
             item['imdb_id'] = imdb_id
         path = 'lists/items/add/{api_key}'
         post = {
@@ -117,9 +118,9 @@ class TraktListApi():
         if not tmdb_id and not imdb_id:
             raise AttributeError('Need one of tmdb_id, imdb_id')
         item = {'type': 'movie'}
-        if tmdb_id:
+        if tmdb_id and tmdb_id != NONE:
             item['tmdb_id'] = tmdb_id
-        if imdb_id:
+        if imdb_id and imdb_id != NONE:
             item['imdb_id'] = imdb_id
         path = 'movie/watchlist/{api_key}'
         post = {
@@ -131,9 +132,9 @@ class TraktListApi():
         if not tmdb_id and not imdb_id:
             raise AttributeError('Need one of tmdb_id, imdb_id')
         item = {'type': 'movie'}
-        if tmdb_id:
+        if tmdb_id and tmdb_id != NONE:
             item['tmdb_id'] = tmdb_id
-        if imdb_id:
+        if imdb_id and imdb_id != NONE:
             item['imdb_id'] = imdb_id
         path = 'lists/items/delete/{api_key}'
         post = {
@@ -146,9 +147,9 @@ class TraktListApi():
         if not tmdb_id and not imdb_id:
             raise AttributeError('Need one of tmdb_id, imdb_id')
         item = {'type': 'movie'}
-        if tmdb_id:
+        if tmdb_id and tmdb_id != NONE:
             item['tmdb_id'] = tmdb_id
-        if imdb_id:
+        if imdb_id and imdb_id != NONE:
             item['imdb_id'] = imdb_id
         path = 'movie/unwatchlist/{api_key}'
         post = {
