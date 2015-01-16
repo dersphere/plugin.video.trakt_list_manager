@@ -20,10 +20,8 @@
 import json
 from urllib import quote_plus as quote, urlencode
 from urllib2 import urlopen, Request, HTTPError, URLError
-from hashlib import sha1
 
-
-API_URL = 'api.trakt.tv/'
+API_URL = 'api.trakt.tv'
 USER_AGENT = 'XBMC Add-on Trakt.tv List Manager'
 NONE = 'NONE'
 
@@ -53,26 +51,27 @@ class TraktListApi():
         self.connected = False
         self._username = None
         self._password = None
+        self._token = None
         self._api_key = None
         self._use_https = True
 
     def connect(self, username=None, password=None, api_key=None,
                 use_https=True):
         self._username = username
-        self._password = sha1(password).hexdigest()
+        self._password = password
         self._api_key = api_key
         self._use_https = use_https
-        self.connected = self._test_credentials()
+        self.connected = self.login()
         if not self.connected:
             self._reset_connection()
         return self.connected
 
     def get_watchlist(self):
-        path = 'user/watchlist/movies.json/{api_key}/{username}'
+        path = '/users/me/watchlist/movies?extended=full,images'
         return self._api_call(path, auth=True)
 
     def get_lists(self):
-        path = 'user/lists.json/{api_key}/{username}'
+        path = '/users/me/lists'
         return self._api_call(path, auth=True)
 
     def search_movie(self, query):
@@ -80,7 +79,7 @@ class TraktListApi():
         return self._api_call(path)
 
     def get_list(self, list_slug):
-        path = 'user/list.json/{api_key}/{username}/' + quote(list_slug)
+        path = '/users/me/lists/%s/items?extended=full,images' % (list_slug)
         return self._api_call(path, auth=True)
 
     def add_list(self, name, privacy_id=None, description=None):
@@ -157,37 +156,50 @@ class TraktListApi():
         }
         return self._api_call(path, post=post, auth=True)
 
-    def _test_credentials(self):
-        path = 'account/test/{api_key}'
-        return self._api_call(path, auth=True).get('status') == 'success'
-
-    def _api_call(self, path, post={}, auth=False):
-        url = self._api_url + path.format(
-            api_key=self._api_key,
-            username=self._username,
-        )
-        self.log('_api_call using url: %s' % url)
-        if auth:
-            post.update({
-                'username': self._username,
-                'password': self._password
-            })
-        if post:
-            request = Request(url, json.dumps(post))
+    def login(self):
+        path = '/auth/login'
+        post = {
+                'login': self._username,
+                'password': self._password}
+        result = self._api_call(path, post = post)
+        if 'token' in result:
+            self._token = result['token']
+            return True
         else:
-            request = Request(url)
-        request.add_header('User-Agent', USER_AGENT)
-        request.add_header('content-type', 'application/json')
+            return False 
+
+    def _api_call(self, path, post=None, auth=False):
+        if post is None: post = {}
+        url = self._api_url + path
+        headers = {
+                   'User-Agent': USER_AGENT,
+                   'Content-Type': 'application/json', 
+                   'trakt-api-key': self._api_key,
+                   'trakt-api-version': 2}
+        
+        if auth:
+            if self._token is None:
+                self.login()
+            headers.update({
+                'trakt-user-login': self._username,
+                'trakt-user-token': self._token})
+
+        self.log('_api_call using url: |%s| headers: |%s| post: |%s|' % (url, headers, post))
+        if post:
+            request = Request(url, json.dumps(post), headers=headers)
+        else:
+            request = Request(url, headers=headers)
+        
         try:
             response = urlopen(request)
             json_data = json.loads(response.read())
-        except HTTPError, error:
+        except HTTPError as error:
             self.log('HTTPError: %s' % error)
             if error.code == 401:
                 raise AuthenticationError(error)
             else:
-                raise HTTPError(error)
-        except URLError, error:
+                raise
+        except URLError as error:
             self.log('URLError: %s' % error)
             raise ConnectionError(error)
         self.log('_api_call response: %s' % repr(json_data))

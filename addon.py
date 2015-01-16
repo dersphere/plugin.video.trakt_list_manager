@@ -21,7 +21,7 @@ from xbmcswift2 import Plugin, xbmc, xbmcgui
 from resources.lib.api import TraktListApi, AuthenticationError, \
     LIST_PRIVACY_IDS, NONE
 
-API_KEY = '2ce240ab6543ebd7d84abe5268a822d5'
+API_KEY = '0e22ca9987e7f45b475bbde1ab2ce2d86396164ba8d57ba1a8c1cb644102b27e'
 WATCHLIST_SLUG = 'WATCHLIST'  # hacky but reduces code amount...
 
 CP_ADD_URL = 'plugin://plugin.video.couchpotato_manager/movies/add?imdb_id=%s'
@@ -100,11 +100,11 @@ def show_customlists():
         'label': '%s (%s)' % (trakt_list['name'], trakt_list['privacy']),
         'replace_context_menu': True,
         'context_menu': context_menu(
-            list_slug=trakt_list['slug']
+            list_slug=trakt_list['ids']['slug']
         ),
         'path': plugin.url_for(
             endpoint='show_customlist',
-            list_slug=trakt_list['slug']
+            list_slug=trakt_list['ids']['slug']
         )
     } for trakt_list in api.get_lists()]
     items.append({
@@ -147,11 +147,7 @@ def show_customlist(list_slug):
             ),
         ]
 
-    raw_movies = (
-        dict(m['movie'].items() + [('plays', m.get('plays', 0))])
-        for m in api.get_list(list_slug).get('items', [])
-        if m['type'] == 'movie'
-    )
+    raw_movies = [item for item in api.get_list(list_slug) if item['type']=='movie']
     items = format_movies(raw_movies)
     for item in items:
         item['context_menu'] = context_menu(
@@ -217,7 +213,6 @@ def show_watchlist():
         )
     })
     return items
-
 
 @plugin.route('/watchlist/movies/add')
 def add_movie_to_watchlist():
@@ -430,12 +425,14 @@ def play_movie(imdb_id):
 def format_movies(raw_movies):
     xbmc_movies = get_xbmc_movies()
     items = []
-    for i, movie in enumerate(raw_movies):
-        if movie.get('imdb_id', '') in xbmc_movies:
+    for i, item in enumerate(raw_movies):
+        movie = item['movie']
+        ids=movie['ids']
+        if ids.get('imdb', '') in xbmc_movies:
             label = u'[B]%s[/B]' % movie['title']
             path = plugin.url_for(
                 endpoint='play_movie',
-                imdb_id=movie['imdb_id']
+                imdb_id=ids['imdb']
             )
         else:
             label = movie['title']
@@ -444,14 +441,15 @@ def format_movies(raw_movies):
             )
         items.append({
             'label': label,
-            'thumbnail': movie['images']['poster'],
+            'thumbnail': movie['images']['poster']['full'],
             'info': {
                 'count': i,
-                'code': movie.get('imdb_id', ''),
+                'code': ids.get('imdb', ''),
+                'tmdb_id': ids.get('tmdb', ''),
                 'year': movie.get('year', 0),
                 'plot': movie.get('overview', ''),
                 'mpaa': movie.get('certification', ''),
-                'genre': ', '.join(movie.get('genres', [])),
+                #'genre': ', '.join(movie.get('genres', [])),
                 'tagline': movie.get('tagline', ''),
                 'playcount': movie.get('plays', 0),
                 'rating': movie.get('ratings', {}).get('percentage', 0) / 10.0,
@@ -462,7 +460,7 @@ def format_movies(raw_movies):
             },
             'replace_context_menu': True,
             'properties': {
-                'fanart_image': movie['images']['fanart'],
+                'fanart_image': movie['images']['fanart']['full'],
             },
             'is_playable': True,
             'path': path,
