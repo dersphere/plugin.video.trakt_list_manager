@@ -17,6 +17,7 @@
 #    along with this program. If not, see <http://www.gnu.org/licenses/>.
 #
 
+import os
 from xbmcswift2 import Plugin, xbmc, xbmcgui
 from resources.lib.api import TraktListApi, AuthenticationError, \
     LIST_PRIVACY_IDS, NONE
@@ -61,9 +62,7 @@ STRINGS = {
     'help_l3': 30143,
 }
 
-
 plugin = Plugin()
-
 
 @plugin.route('/')
 def show_root():
@@ -74,7 +73,6 @@ def show_root():
          'path': plugin.url_for(endpoint='show_customlists')},
     ]
     return plugin.finish(items)
-
 
 @plugin.route('/customlists/')
 def show_customlists():
@@ -115,7 +113,6 @@ def show_customlists():
         )
     })
     return plugin.finish(items)
-
 
 @plugin.route('/customlists/<list_slug>/movies/')
 def show_customlist(list_slug):
@@ -168,7 +165,6 @@ def show_customlist(list_slug):
     sort_methods = ['playlist_order', 'video_rating', 'video_year']
     return plugin.finish(items, sort_methods=sort_methods)
 
-
 @plugin.route('/watchlist/movies/')
 def show_watchlist():
     def context_menu(imdb_id, tmdb_id):
@@ -218,12 +214,10 @@ def show_watchlist():
 def add_movie_to_watchlist():
     movie = get_movie()
     if movie:
-        result = api.add_movie_to_watchlist(
-            imdb_id=movie['imdb_id'],
-            tmdb_id=movie['tmdb_id']
-        )
-        show_result(result)
-
+        api.add_movie_to_watchlist(
+            imdb_id=movie['ids']['imdb'],
+            tmdb_id=movie['ids']['tmdb'])
+        show_result()
 
 @plugin.route('/watchlist/movies/delete/<imdb_id>/<tmdb_id>')
 def delete_movie_from_watchlist(imdb_id, tmdb_id):
@@ -232,12 +226,10 @@ def delete_movie_from_watchlist(imdb_id, tmdb_id):
         _('delete_movie_l1')
     )
     if confirmed:
-        result = api.del_movie_from_watchlist(
+        api.del_movie_from_watchlist(
             imdb_id=imdb_id,
-            tmdb_id=tmdb_id
-        )
-        show_result(result)
-
+            tmdb_id=tmdb_id)
+        show_result()
 
 @plugin.route('/customlists/new')
 def new_customlist():
@@ -250,12 +242,8 @@ def new_customlist():
             'default_privacy',
             choices=LIST_PRIVACY_IDS
         )
-        result = api.add_list(
-            name=title,
-            privacy_id=privacy_id
-        )
-        show_result(result)
-
+        api.add_list(name=title,privacy_id=privacy_id)
+        show_result()
 
 @plugin.route('/customlists/<list_slug>/delete')
 def delete_customlist(list_slug):
@@ -264,8 +252,8 @@ def delete_customlist(list_slug):
         _('delete_customlist_l1')
     )
     if confirmed:
-        show_result(api.del_list(list_slug))
-
+        api.del_list(list_slug)
+        show_result()
 
 @plugin.route('/movies/add')
 def add_movie_to_list():
@@ -278,33 +266,31 @@ def add_movie_to_list():
             list_to_add = ask_list()
             if not list_to_add:
                 return
-            list_slug = list_to_add['slug']
+            list_slug = list_to_add['ids']['slug']
         if list_slug == WATCHLIST_SLUG:
-            result = api.add_movie_to_watchlist(
-                imdb_id=movie['imdb_id'],
-                tmdb_id=movie['tmdb_id']
+            api.add_movie_to_watchlist(
+                imdb_id=movie['ids']['imdb'],
+                tmdb_id=movie['ids']['tmdb']
             )
-            show_result(result)
+            show_result()
         elif list_slug:
-            result = api.add_movie_to_list(
+            api.add_movie_to_list(
                 list_slug=list_slug,
-                imdb_id=movie['imdb_id'],
-                tmdb_id=movie['tmdb_id']
+                imdb_id=movie['ids']['imdb'],
+                tmdb_id=movie['ids']['tmdb']
             )
-            show_result(result)
-
+            show_result()
 
 @plugin.route('/customlists/<list_slug>/movies/add')
 def add_movie_to_customlist(list_slug):
     movie = get_movie()
     if movie:
-        result = api.add_movie_to_list(
+        api.add_movie_to_list(
             list_slug=list_slug,
-            imdb_id=movie['imdb_id'],
-            tmdb_id=movie['tmdb_id']
+            imdb_id=movie['ids']['imdb'],
+            tmdb_id=movie['ids']['tmdb']
         )
-        show_result(result)
-
+        show_result()
 
 @plugin.route('/customlists/<list_slug>/movies/delete/<imdb_id>/<tmdb_id>')
 def delete_movie_from_customlist(list_slug, imdb_id, tmdb_id):
@@ -313,13 +299,12 @@ def delete_movie_from_customlist(list_slug, imdb_id, tmdb_id):
         _('delete_movie_l1')
     )
     if confirmed:
-        result = api.del_movie_from_list(
+        api.del_movie_from_list(
             list_slug=list_slug,
             imdb_id=imdb_id,
             tmdb_id=tmdb_id
         )
-        show_result(result)
-
+        show_result()
 
 def get_movie():
     movie = {
@@ -338,38 +323,31 @@ def get_movie():
         plugin.notify(msg=_('no_movie_found'))
         return
     items = [
-        '%s (%s)' % (movie['title'], movie['year'])
+        '%s (%s)' % (movie['movie']['title'], movie['movie']['year'])
         for movie in movies
     ]
     selected = xbmcgui.Dialog().select(
         _('select_movie'), items
     )
     if selected >= 0:
-        return movies[selected]
-
+        return movies[selected]['movie']
 
 def ask_list():
     customlists = api.get_lists()
-    lists = [{'name': ('watchlist'), 'slug': WATCHLIST_SLUG}] + customlists
+    lists = [{'name': ('watchlist'), 'ids': {'slug': WATCHLIST_SLUG}}] + customlists
     selected = xbmcgui.Dialog().select(
         _('select_list'), [l['name'] for l in lists]
     )
     if selected >= 0:
         return lists[selected]
 
-
-def show_result(result):
-    if result.get('status') == 'success':
-        plugin.notify(msg=_('success'))
-        if 'refresh' in plugin.request.args:
-            xbmc.executebuiltin('Container.Refresh')
-    else:
-        xbmcgui.Dialog().ok(
-            _('problem'),
-            result.get('error', _('unknown'))
-        )
-
-
+def show_result():
+    #TODO: Consider how to catch & display results 
+    icon_path = os.path.join(plugin.addon.getAddonInfo('path'), 'icon.png')
+    plugin.notify(msg=_('success'), image=icon_path)
+    if 'refresh' in plugin.request.args:
+        xbmc.executebuiltin('Container.Refresh')
+    
 @plugin.route('/help')
 def show_help():
     xbmcgui.Dialog().ok(
@@ -379,22 +357,19 @@ def show_help():
         _('help_l3'),
     )
 
-
 @plugin.route('/settings/default_list')
 def set_default_list():
     default_list = ask_list()
     if default_list:
         plugin.set_setting('default_list', default_list['name'])
-        plugin.set_setting('default_list_slug', default_list['slug'])
+        plugin.set_setting('default_list_slug', default_list['ids']['slug'])
     else:
         plugin.set_setting('default_list', '')
         plugin.set_setting('default_list_slug', '')
 
-
 @plugin.route('/settings')
 def open_settings():
     plugin.open_settings()
-
 
 @plugin.cached()
 def get_xbmc_movies():
@@ -414,13 +389,11 @@ def get_xbmc_movies():
     )
     return movie_dict
 
-
 @plugin.route('/movie/<imdb_id>/play')
 def play_movie(imdb_id):
     xbmc_movies = get_xbmc_movies()
     movie_file = xbmc_movies[imdb_id]
     return plugin.set_resolved_url(movie_file)
-
 
 def format_movies(raw_movies):
     xbmc_movies = get_xbmc_movies()
@@ -492,10 +465,8 @@ def get_api():
             plugin.open_settings()
     return api
 
-
 def log(text):
     plugin.log.info(text)
-
 
 def _(string_id):
     if string_id in STRINGS:

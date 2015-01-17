@@ -18,12 +18,13 @@
 #
 
 import json
-from urllib import quote_plus as quote, urlencode
+from urllib import urlencode
 from urllib2 import urlopen, Request, HTTPError, URLError
 
 API_URL = 'api.trakt.tv'
 USER_AGENT = 'XBMC Add-on Trakt.tv List Manager'
 NONE = 'NONE'
+PAGE_LIMIT = 30
 
 LIST_PRIVACY_IDS = (
     'private',
@@ -31,17 +32,13 @@ LIST_PRIVACY_IDS = (
     'public'
 )
 
-
 class AuthenticationError(Exception):
     pass
-
 
 class ConnectionError(Exception):
     pass
 
-
 class TraktListApi():
-
     def __init__(self, *args, **kwargs):
         self._reset_connection()
         if args or kwargs:
@@ -75,7 +72,7 @@ class TraktListApi():
         return self._api_call(path, auth=True)
 
     def search_movie(self, query):
-        path = 'search/movies.json/{api_key}/?' + urlencode({'query': query})
+        path = '/search?' + urlencode({'type': 'movie', 'query': query, 'limit': PAGE_LIMIT})
         return self._api_call(path)
 
     def get_list(self, list_slug):
@@ -83,7 +80,7 @@ class TraktListApi():
         return self._api_call(path, auth=True)
 
     def add_list(self, name, privacy_id=None, description=None):
-        path = 'lists/add/{api_key}'
+        path = '/users/me/lists'
         post = {
             'name': name,
             'description': description or '',
@@ -92,36 +89,32 @@ class TraktListApi():
         return self._api_call(path, post=post, auth=True)
 
     def del_list(self, list_slug):
-        path = 'lists/delete/{api_key}'
-        post = {
-            'slug': list_slug
-        }
-        return self._api_call(path, post=post, auth=True)
+        path = '/users/me/lists/%s' % (list_slug)
+        return self._api_call(path, delete=True, auth=True)
 
     def add_movie_to_list(self, list_slug, imdb_id=None, tmdb_id=None):
         if not tmdb_id and not imdb_id:
             raise AttributeError('Need one of tmdb_id, imdb_id')
-        item = {'type': 'movie'}
+        item = {'ids': {}}
         if tmdb_id and tmdb_id != NONE:
-            item['tmdb_id'] = tmdb_id
+            item['ids']['tmdb'] = tmdb_id
         if imdb_id and imdb_id != NONE:
-            item['imdb_id'] = imdb_id
-        path = 'lists/items/add/{api_key}'
+            item['ids']['imdb'] = imdb_id
+        path = '/users/me/lists/%s/items' % (list_slug)
         post = {
-            'slug': list_slug,
-            'items': [item],
+            'movies': [item],
         }
         return self._api_call(path, post=post, auth=True)
 
     def add_movie_to_watchlist(self, imdb_id=None, tmdb_id=None):
         if not tmdb_id and not imdb_id:
             raise AttributeError('Need one of tmdb_id, imdb_id')
-        item = {'type': 'movie'}
+        item = {'ids': {}}
         if tmdb_id and tmdb_id != NONE:
-            item['tmdb_id'] = tmdb_id
+            item['ids']['tmdb'] = tmdb_id
         if imdb_id and imdb_id != NONE:
-            item['imdb_id'] = imdb_id
-        path = 'movie/watchlist/{api_key}'
+            item['ids']['imdb'] = imdb_id
+        path = '/sync/watchlist'
         post = {
             'movies': [item],
         }
@@ -130,27 +123,26 @@ class TraktListApi():
     def del_movie_from_list(self, list_slug, imdb_id=None, tmdb_id=None):
         if not tmdb_id and not imdb_id:
             raise AttributeError('Need one of tmdb_id, imdb_id')
-        item = {'type': 'movie'}
+        item = {'ids': {}}
         if tmdb_id and tmdb_id != NONE:
-            item['tmdb_id'] = tmdb_id
+            item['ids']['tmdb'] = tmdb_id
         if imdb_id and imdb_id != NONE:
-            item['imdb_id'] = imdb_id
-        path = 'lists/items/delete/{api_key}'
+            item['ids']['imdb'] = imdb_id
+        path = '/users/me/lists/%s/items/remove' % (list_slug)
         post = {
-            'slug': list_slug,
-            'items': [item],
+            'movies': [item],
         }
         return self._api_call(path, post=post, auth=True)
 
     def del_movie_from_watchlist(self, imdb_id=None, tmdb_id=None):
         if not tmdb_id and not imdb_id:
             raise AttributeError('Need one of tmdb_id, imdb_id')
-        item = {'type': 'movie'}
+        item = {'ids': {}}
         if tmdb_id and tmdb_id != NONE:
-            item['tmdb_id'] = tmdb_id
+            item['ids']['tmdb'] = tmdb_id
         if imdb_id and imdb_id != NONE:
-            item['imdb_id'] = imdb_id
-        path = 'movie/unwatchlist/{api_key}'
+            item['ids']['imdb'] = imdb_id
+        path = '/sync/watchlist/remove'
         post = {
             'movies': [item],
         }
@@ -163,12 +155,13 @@ class TraktListApi():
                 'password': self._password}
         result = self._api_call(path, post = post)
         if 'token' in result:
+            #TODO: Keep token so it can be reused on later runs
             self._token = result['token']
             return True
         else:
             return False 
 
-    def _api_call(self, path, post=None, auth=False):
+    def _api_call(self, path, delete= False, post=None, auth=False):
         if post is None: post = {}
         url = self._api_url + path
         headers = {
@@ -190,9 +183,17 @@ class TraktListApi():
         else:
             request = Request(url, headers=headers)
         
+        if delete:
+            request.get_method = lambda: 'DELETE'
+        
         try:
             response = urlopen(request)
-            json_data = json.loads(response.read())
+            data = response.read()
+            if data:
+                json_data = json.loads(data)
+            else:
+                json_data = {}
+                
         except HTTPError as error:
             self.log('HTTPError: %s' % error)
             if error.code == 401:
