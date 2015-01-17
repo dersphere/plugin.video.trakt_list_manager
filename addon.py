@@ -446,15 +446,19 @@ def get_api():
     api = TraktListApi()
     while not logged_in:
         try:
-            logged_in = api.connect(
+            token = api.connect(
                 username=plugin.get_setting('username', unicode),
                 password=plugin.get_setting('password', unicode),
+                token=plugin.get_setting('trakt_token', unicode),
                 api_key=API_KEY,
                 use_https=plugin.get_setting('use_https', bool),
             )
+            plugin.set_setting('trakt_token', token)
+            logged_in = True
         except AuthenticationError:
-            logged_in = False
-        if not logged_in:
+            token = ''
+        
+        if not token:
             try_again = xbmcgui.Dialog().yesno(
                 _('connection_error'),
                 _('wrong_credentials'),

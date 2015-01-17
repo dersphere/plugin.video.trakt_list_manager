@@ -45,23 +45,25 @@ class TraktListApi():
             self.connect(*args, **kwargs)
 
     def _reset_connection(self):
-        self.connected = False
         self._username = None
         self._password = None
-        self._token = None
+        self._token = ''
         self._api_key = None
         self._use_https = True
 
-    def connect(self, username=None, password=None, api_key=None,
+    def connect(self, username=None, password=None, token='', api_key=None,
                 use_https=True):
         self._username = username
         self._password = password
         self._api_key = api_key
         self._use_https = use_https
-        self.connected = self.login()
-        if not self.connected:
-            self._reset_connection()
-        return self.connected
+        if not token:
+            self._token = self.login()
+            if not self._token:
+                self._reset_connection()
+        else:
+            self._token = token
+        return self._token
 
     def get_watchlist(self):
         path = '/users/me/watchlist/movies?extended=full,images'
@@ -155,11 +157,10 @@ class TraktListApi():
                 'password': self._password}
         result = self._api_call(path, post = post)
         if 'token' in result:
-            #TODO: Keep token so it can be reused on later runs
             self._token = result['token']
-            return True
+            return result['token']
         else:
-            return False 
+            return '' 
 
     def _api_call(self, path, delete= False, post=None, auth=False):
         if post is None: post = {}
@@ -170,39 +171,46 @@ class TraktListApi():
                    'trakt-api-key': self._api_key,
                    'trakt-api-version': 2}
         
-        if auth:
-            if self._token is None:
-                self.login()
-            headers.update({
-                'trakt-user-login': self._username,
-                'trakt-user-token': self._token})
-
-        self.log('_api_call using url: |%s| headers: |%s| post: |%s|' % (url, headers, post))
-        if post:
-            request = Request(url, json.dumps(post), headers=headers)
-        else:
-            request = Request(url, headers=headers)
-        
-        if delete:
-            request.get_method = lambda: 'DELETE'
-        
-        try:
-            response = urlopen(request)
-            data = response.read()
-            if data:
-                json_data = json.loads(data)
+        auth_retry = False
+        while True:
+            if auth:
+                if not self._token:
+                    self.login()
+                headers.update({
+                    'trakt-user-login': self._username,
+                    'trakt-user-token': self._token})
+    
+            self.log('_api_call using url: |%s| headers: |%s| post: |%s|' % (url, headers, post))
+            if post:
+                request = Request(url, json.dumps(post), headers=headers)
             else:
-                json_data = {}
-                
-        except HTTPError as error:
-            self.log('HTTPError: %s' % error)
-            if error.code == 401:
-                raise AuthenticationError(error)
-            else:
-                raise
-        except URLError as error:
-            self.log('URLError: %s' % error)
-            raise ConnectionError(error)
+                request = Request(url, headers=headers)
+            
+            if delete:
+                request.get_method = lambda: 'DELETE'
+            
+            try:
+                response = urlopen(request)
+                data = response.read()
+                if data:
+                    json_data = json.loads(data)
+                else:
+                    json_data = {}
+                break
+                    
+            except HTTPError as error:
+                self.log('HTTPError: %s' % error)
+                if error.code == 401:
+                    if not auth or auth_retry:
+                        raise AuthenticationError(error)
+                    else:
+                        auth_retry = True
+                        self._token = ''
+                else:
+                    raise
+            except URLError as error:
+                self.log('URLError: %s' % error)
+                raise ConnectionError(error)
         self.log('_api_call response: %s' % repr(json_data))
         return json_data
 
