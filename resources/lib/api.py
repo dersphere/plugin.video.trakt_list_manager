@@ -21,7 +21,7 @@ import json
 from urllib import urlencode
 from urllib2 import urlopen, Request, HTTPError, URLError
 
-API_URL = 'api.trakt.tv'
+API_URL = 'api-v2launch.trakt.tv'
 USER_AGENT = 'XBMC Add-on Trakt.tv List Manager'
 NONE = 'NONE'
 PAGE_LIMIT = 30
